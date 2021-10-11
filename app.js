@@ -14,7 +14,16 @@ connection.connect((err) => {
 app.use(express.json());
 
 app.get("/api/series", (req, res) => {
-  connection.query("SELECT * FROM series", (err, result) => {
+  let sql = "SELECT * FROM series";
+  const sqlValues = [];
+  if (req.query.year) {
+    sql += " WHERE year = ?"
+    sqlValues.push(req.query.year);
+  } else if (req.query.color) {
+    sql += " WHERE color = ?";
+    sqlValues.push(req.query.color);
+  }
+  connection.query(sql, sqlValues, (err, result) => {
     err
       ? res.status(500).json("Error retrieving data from database")
       : res.status(200).json(result);
@@ -59,36 +68,7 @@ app.get('/api/series/:id', (req, res) => {
     }
   );
 });
-app.get('/api/series/year/:year', (req, res) => {
-  const serieYear = req.params.year;
-  connection.query(
-    'SELECT * FROM series WHERE year = ?',
-    [serieYear],
-    (err, results) => {
-      if (err) {
-        res.status(500).send('Error retrieving serie from database');
-      } else {
-        if (results.length) res.json(results[0]);
-        else res.status(404).send('Serie not found');
-      }
-    }
-  );
-});
-app.get('/api/series/color/:color', (req, res) => {
-  const serieColor = req.params.color;
-  connection.query(
-    'SELECT * FROM series WHERE color = ?',
-    [serieColor],
-    (err, results) => {
-      if (err) {
-        res.status(500).send('Error retrieving serie from database');
-      } else {
-        if (results.length) res.json(results[0]);
-        else res.status(404).send('Serie not found');
-      }
-    }
-  );
-});
+
 
 app.post("/api/series", (req, res) => {
   const { title, director, year, color, nbEpisodes, nbSeasons } = req.body;
