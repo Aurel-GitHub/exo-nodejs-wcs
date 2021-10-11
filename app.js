@@ -29,6 +29,67 @@ app.get("/api/users", (req, res) => {
   });
 });
 
+app.get('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  connection.query(
+    'SELECT * FROM users WHERE id = ?',
+    [userId],
+    (err, results) => {
+      if (err) {
+        res.status(500).send('Error retrieving user from database');
+      } else {
+        if (results.length) res.json(results[0]);
+        else res.status(404).send('User not found');
+      }
+    }
+  );
+});
+app.get('/api/series/:id', (req, res) => {
+  const seriesId = req.params.id;
+  connection.query(
+    'SELECT * FROM series WHERE id = ?',
+    [seriesId],
+    (err, results) => {
+      if (err) {
+        res.status(500).send('Error retrieving serie from database');
+      } else {
+        if (results.length) res.json(results[0]);
+        else res.status(404).send('Serie not found');
+      }
+    }
+  );
+});
+app.get('/api/series/year/:year', (req, res) => {
+  const serieYear = req.params.year;
+  connection.query(
+    'SELECT * FROM series WHERE year = ?',
+    [serieYear],
+    (err, results) => {
+      if (err) {
+        res.status(500).send('Error retrieving serie from database');
+      } else {
+        if (results.length) res.json(results[0]);
+        else res.status(404).send('Serie not found');
+      }
+    }
+  );
+});
+app.get('/api/series/color/:color', (req, res) => {
+  const serieColor = req.params.color;
+  connection.query(
+    'SELECT * FROM series WHERE color = ?',
+    [serieColor],
+    (err, results) => {
+      if (err) {
+        res.status(500).send('Error retrieving serie from database');
+      } else {
+        if (results.length) res.json(results[0]);
+        else res.status(404).send('Serie not found');
+      }
+    }
+  );
+});
+
 app.post("/api/series", (req, res) => {
   const { title, director, year, color, nbEpisodes, nbSeasons } = req.body;
   connection.query(
