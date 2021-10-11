@@ -1,23 +1,60 @@
-const connection = require('./db-config');
-const express = require('express');
+const connection = require("./db-config");
+const express = require("express");
 const app = express();
 
 const port = process.env.PORT || 3000;
 
 connection.connect((err) => {
-  if (err)  {
-    console.error('error connection: ' + err.stack);
+  if (err) {
+    console.error("error connection: " + err.stack);
   } else {
-    console.log('Connected to database with thredId: ' + connection.threadId);
+    console.log("Connected to database with thredId: " + connection.threadId);
   }
+});
+app.use(express.json());
+
+app.get("/api/series", (req, res) => {
+  connection.query("SELECT * FROM series", (err, result) => {
+    err
+      ? res.status(500).json("Error retrieving data from database")
+      : res.status(200).json(result);
+  });
+});
+
+app.get("/api/users", (req, res) => {
+  connection.query("SELECT * FROM users", (err, result) => {
+    err
+      ? res.status(500).json("Error retrieving data from database")
+      : res.status(200).json(result);
+  });
+});
+
+app.post("/api/series", (req, res) => {
+  const { title, director, year, color, nbEpisodes, nbSeasons } = req.body;
+  connection.query(
+    "INSERT INTO series(title, director, year, color, nbEpisodes, nbSeasons) VALUES (?, ?, ?, ?, ?, ?)",
+    [title, director, year, color, nbEpisodes, nbSeasons],
+    (err, result) => {
+      err
+        ? res.status(500).send("Error saving the movie")
+        : res.status(201).send("Movie successfully saved");
+    }
+  );
+});
+
+app.post("/api/users", (req, res) => {
+  const { firstname, lastname, email } = req.body;
+  connection.query(
+    "INSERT INTO users(firstname, lastname, email) VALUES (?,?, ?, ?)",
+    [firstname, lastname, email],
+    (err, result) => {
+      err
+        ? res.status(500).send("Error saving the user")
+        : res.status(201).send("User successfully saved");
+    }
+  );
 });
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-
-app.get('/api/series', (req,res) => {
-  connection.query('SELECT * FROM series', (err,result) => {
-    err ? res.status(500).json('Error retrieving data from database') : res.status(200).json(result);
-  })
-})
