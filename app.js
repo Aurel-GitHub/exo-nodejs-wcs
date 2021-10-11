@@ -66,8 +66,9 @@ app.put("/api/users/:id", (req, res) => {
         ? res.status(500).send("Error updating a user")
         : res.status(200).send("User updated successfully !");
     }
-  )
-})
+  );
+});
+
 app.put("/api/series/:id", (req, res) => {
   const seriesId = req.params.id;
   const reqBodyValues = req.body;
@@ -79,8 +80,34 @@ app.put("/api/series/:id", (req, res) => {
         ? res.status(500).send("Error updating a series")
         : res.status(200).send("Series updated successfully !");
     }
-  )
-})
+  );
+});
+
+app.delete("/api/users/:id", (req, res) => {
+  const userId = req.params.id;
+  connection.query(
+    "DELETE FROM users WHERE id = ?",
+    [userId],
+    (err) => {
+      err 
+        ? res.status(500).send("Error deleting an user").json(err)
+        : res.status(200).send("User deleted!");
+    }
+  );
+});
+
+app.delete("/api/series/:id", (req, res) => {
+  const serieId = req.params.id;
+  connection.query(
+    "DELETE FROM series WHERE id = ?",
+    [serieId],
+    (err) => {
+      err 
+        ? res.status(500).send("Error deleting an serie").json(err)
+        : res.status(200).send("Serie deleted!");
+    }
+  );
+});
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
