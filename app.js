@@ -17,7 +17,7 @@ app.get("/api/series", (req, res) => {
   let sql = "SELECT * FROM series";
   const sqlValues = [];
   if (req.query.year) {
-    sql += " WHERE year = ?"
+    sql += " WHERE year = ?";
     sqlValues.push(req.query.year);
   } else if (req.query.color) {
     sql += " WHERE color = ?";
@@ -38,37 +38,36 @@ app.get("/api/users", (req, res) => {
   });
 });
 
-app.get('/api/users/:id', (req, res) => {
+app.get("/api/users/:id", (req, res) => {
   const userId = req.params.id;
   connection.query(
-    'SELECT * FROM users WHERE id = ?',
+    "SELECT * FROM users WHERE id = ?",
     [userId],
     (err, results) => {
       if (err) {
-        res.status(500).send('Error retrieving user from database');
+        res.status(500).send("Error retrieving user from database");
       } else {
         if (results.length) res.json(results[0]);
-        else res.status(404).send('User not found');
+        else res.status(404).send("User not found");
       }
     }
   );
 });
-app.get('/api/series/:id', (req, res) => {
+app.get("/api/series/:id", (req, res) => {
   const seriesId = req.params.id;
   connection.query(
-    'SELECT * FROM series WHERE id = ?',
+    "SELECT * FROM series WHERE id = ?",
     [seriesId],
     (err, results) => {
       if (err) {
-        res.status(500).send('Error retrieving serie from database');
+        res.status(500).send("Error retrieving serie from database");
       } else {
         if (results.length) res.json(results[0]);
-        else res.status(404).send('Serie not found');
+        else res.status(404).send("Serie not found");
       }
     }
   );
 });
-
 
 app.post("/api/series", (req, res) => {
   const { title, director, year, color, nbEpisodes, nbSeasons } = req.body;
@@ -76,9 +75,13 @@ app.post("/api/series", (req, res) => {
     "INSERT INTO series(title, director, year, color, nbEpisodes, nbSeasons) VALUES (?, ?, ?, ?, ?, ?)",
     [title, director, year, color, nbEpisodes, nbSeasons],
     (err, result) => {
-      err
-        ? res.status(500).send("Error saving the movie")
-        : res.status(201).send("Movie successfully saved");
+     if (err) {
+       res.status(500).send('Error saving the user');
+     } else {
+       const id = result.insertId;
+       const createdSeries = { id, title, director, year, color, nbEpisodes, nbSeasons };
+       res.status(201).json(createdSeries);
+     }
     }
   );
 });
@@ -89,65 +92,73 @@ app.post("/api/users", (req, res) => {
     "INSERT INTO users(firstname, lastname, email) VALUES (?, ?, ?)",
     [firstname, lastname, email],
     (err, result) => {
-      err
-        ? res.status(500).send("Error saving the user")
-        : res.status(201).send("User successfully saved");
+      if (err) {
+        res.status(500).send("Error saving the user");
+      } else {
+        const id = result.insertId;
+        const createdUser = { id, firstname, lastname, email };
+        res.status(201).json(createdUser);
+      }
     }
   );
 });
 
 app.put("/api/users/:id", (req, res) => {
   const userId = req.params.id;
-  const reqBodyValues = req.body;
-  connection.query(
-    "UPDATE users SET ? WHERE id = ?",
-    [reqBodyValues, userId],
-    (err) => {
-      err
-        ? res.status(500).send("Error updating a user")
-        : res.status(200).send("User updated successfully !");
-    }
-  );
+  const db = connection.promise();
+  let existingUser = null;
+  db.query("SELECT * FROM users WHERE id = ?", [userId])
+    .then(([results]) => {
+      existingUser = results[0];
+      if (!existingUser) return Promise.reject("RECORD_NOT_FOUND");
+      return db.query("UPDATE users SET ? WHERE id = ?", [req.body, userId]);
+    })
+    .then(() => {
+      res.status(200).json({ ...existingUser, ...req.body });
+    })
+    .catch((err) => {
+      if (err === "RECORD_NOT_FOUND")
+        res.status(404).send(`User with id ${userId} not found.`);
+      else res.status(500).send("Error updating a user");
+    });
 });
 
 app.put("/api/series/:id", (req, res) => {
   const seriesId = req.params.id;
-  const reqBodyValues = req.body;
-  connection.query(
-    "UPDATE series SET ? WHERE id = ?",
-    [reqBodyValues, seriesId],
-    (err) => {
-      err
-        ? res.status(500).send("Error updating a series")
-        : res.status(200).send("Series updated successfully !");
-    }
-  );
+  const db = connection.promise();
+  let existingSerie = null;
+  db.query("SELECT * FROM series WHERE id = ?", [seriesId])
+    .then((results) => {
+      existingSerie = results[0];
+      if (!existingSerie) return Promise.reject("RECORD_NOT_FOUND");
+      return db.query("UPDATE series SET ? WHERE id = ?", [req.body, seriesId]);
+    })
+    .then(() => {
+      res.status(200).json({...existingSerie, ...req.body});
+    })
+    .then(() => {
+      if (err === "RECORD_NOT_FOUND")
+        res.status(404).send(`Serie with id ${seriesId} not found.`);
+      else res.status(500).send('Error updating a serie');
+    })
 });
 
 app.delete("/api/users/:id", (req, res) => {
   const userId = req.params.id;
-  connection.query(
-    "DELETE FROM users WHERE id = ?",
-    [userId],
-    (err) => {
-      err 
-        ? res.status(500).send("Error deleting an user").json(err)
-        : res.status(200).send("User deleted!");
-    }
-  );
+  connection.query("DELETE FROM users WHERE id = ?", [userId], (err) => {
+    err
+      ? res.status(500).send("Error deleting an user").json(err)
+      : res.status(200).send("User deleted!");
+  });
 });
 
 app.delete("/api/series/:id", (req, res) => {
   const serieId = req.params.id;
-  connection.query(
-    "DELETE FROM series WHERE id = ?",
-    [serieId],
-    (err) => {
-      err 
-        ? res.status(500).send("Error deleting an serie").json(err)
-        : res.status(200).send("Serie deleted!");
-    }
-  );
+  connection.query("DELETE FROM series WHERE id = ?", [serieId], (err) => {
+    err
+      ? res.status(500).send("Error deleting an serie").json(err)
+      : res.status(200).send("Serie deleted!");
+  });
 });
 
 app.listen(port, () => {
