@@ -75,32 +75,54 @@ app.post("/api/series", (req, res) => {
     "INSERT INTO series(title, director, year, color, nbEpisodes, nbSeasons) VALUES (?, ?, ?, ?, ?, ?)",
     [title, director, year, color, nbEpisodes, nbSeasons],
     (err, result) => {
-     if (err) {
-       res.status(500).send('Error saving the user');
-     } else {
-       const id = result.insertId;
-       const createdSeries = { id, title, director, year, color, nbEpisodes, nbSeasons };
-       res.status(201).json(createdSeries);
-     }
+      if (err) {
+        res.status(500).send("Error saving the user");
+      } else {
+        const id = result.insertId;
+        const createdSeries = {
+          id,
+          title,
+          director,
+          year,
+          color,
+          nbEpisodes,
+          nbSeasons,
+        };
+        res.status(201).json(createdSeries);
+      }
     }
   );
 });
 
 app.post("/api/users", (req, res) => {
   const { firstname, lastname, email } = req.body;
-  connection.query(
-    "INSERT INTO users(firstname, lastname, email) VALUES (?, ?, ?)",
-    [firstname, lastname, email],
-    (err, result) => {
-      if (err) {
-        res.status(500).send("Error saving the user");
-      } else {
-        const id = result.insertId;
-        const createdUser = { id, firstname, lastname, email };
-        res.status(201).json(createdUser);
-      }
-    }
-  );
+  const db = connection.promise();
+  let validationErrors = null;
+  db.query("SELECT * FROM users WHERE email = ?", [email])
+    .then(([result]) => {
+      if (result[0]) return Promise.reject("DUPLICATE_EMAIL");
+      validationErrors = Joi.object({
+        email: Joi.string().email().max(255).required(),
+        firstname: Joi.string().max(255).required(),
+        lastname: Joi.string().max(255).required(),
+      }).validate({ firstname, lastname, email }, { abortEarly: false }).error;
+      if (validationErrors) return Promise.reject("INVALID_DATA");
+      return db.query(
+        "INSERT INTO users (firstname, lastname, email) VALUES (?, ?, ?)",
+        [firstname, lastname, email]
+      );
+    })
+    .then(([{ insertId }]) => {
+      res.status(201).json({ id: insertId, firstname, lastname, email });
+    })
+    .catch((err) => {
+      console.error(err);
+      if (err === "DUPLICATE_EMAIL")
+        res.status(409).json({ message: "This email is already used" });
+      else if (err === "INVALID_DATA")
+        res.status(422).json({ validationErrors });
+      else res.status(500).send("Error saving the user");
+    });
 });
 
 app.put("/api/users/:id", (req, res) => {
@@ -134,13 +156,13 @@ app.put("/api/series/:id", (req, res) => {
       return db.query("UPDATE series SET ? WHERE id = ?", [req.body, seriesId]);
     })
     .then(() => {
-      res.status(200).json({...existingSerie, ...req.body});
+      res.status(200).json({ ...existingSerie, ...req.body });
     })
     .then(() => {
       if (err === "RECORD_NOT_FOUND")
         res.status(404).send(`Serie with id ${seriesId} not found.`);
-      else res.status(500).send('Error updating a serie');
-    })
+      else res.status(500).send("Error updating a serie");
+    });
 });
 
 app.delete("/api/users/:id", (req, res) => {
