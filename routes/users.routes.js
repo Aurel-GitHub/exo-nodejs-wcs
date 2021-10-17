@@ -2,9 +2,13 @@ const usersRouter = require('express').Router();
 const Users = require('../models/users/users.model');
 
 usersRouter.get('/', (req, res) => {
-    Users.findMany({ filters: {firstname, lastname}})
-        .then((users) => {
-            res.json(users);
+    Users.findMany({ filters: {firstname, lastname, email}})
+        .then(() => {
+            res.json({
+                firstname: req.body.firstname,
+                lastname: req.body.lastname,
+                email: req.body.email
+            });
         })
         .catch((err) => {
             console.log(err);
@@ -15,7 +19,11 @@ usersRouter.get('/', (req, res) => {
 usersRouter.get('/:id', (req, res) => {
     Users.findOne(req.params.id)
         .then((user) => {
-            user ? res.json(user) : res.status(400).send('User not found')
+            user ? res.json({
+                firstname: req.body.firstname,
+                lastname: req.body.lastname,
+                email: req.body.email
+            }) : res.status(400).send('User not found')
         })
         .catch((err) => {
             console.log(err);
@@ -29,7 +37,11 @@ usersRouter.post('/', (req, res) => {
     ? res.status(422).json({validationErrors: error.details })
     : Users.create(req.body)
         .then((createUser) => {
-            res.status(201).json(createUser);
+            res.status(201).json({
+                firstname: req.body.firstname,
+                lastname: req.body.lastname,
+                email: req.body.email
+            });
         })
         .catch((err) => {
             console.log(err)
@@ -49,7 +61,11 @@ usersRouter.put(':/id', (req,res) => {
             return Users.update(req.params.id, req.body);
         })
         .then(() => { 
-            res.status(200).json({ ...existingUser, ...req.body });
+            res.status(200).json({ 
+                firstname: req.body.firstname,
+                lastname: req.body.lastname,
+                email: req.body.email
+             });
         })
         .catch((err) => {
             console.log(err);
@@ -58,7 +74,7 @@ usersRouter.put(':/id', (req,res) => {
             else if (err === 'INVALID_DATA')
                 res.status(422).json({ validationErrors: validationErrors.details });
             else 
-                res.status(500).send('Error updating a user');
+                res.status(500).send('Error updating a use');
         });
 });
 
