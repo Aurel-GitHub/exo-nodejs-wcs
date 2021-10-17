@@ -1,5 +1,7 @@
 const authRouter = require("express").Router();
+
 const User = require("../models/user");
+
 const { calculateToken } = require("../helpers/users");
 
 authRouter.post("/checkCredentials", (req, res) => {
@@ -12,8 +14,6 @@ authRouter.post("/checkCredentials", (req, res) => {
         (passwordIsCorrect) => {
           if (passwordIsCorrect) {
             const token = calculateToken(email);
-
-            User.update(user.id, { token: token });
 
             res.cookie("user_token", token);
 
