@@ -1,6 +1,6 @@
 const authRouter = require("express").Router();
-
 const User = require("../models/user");
+const { calculateToken } = require("../helpers/users");
 
 authRouter.post("/checkCredentials", (req, res) => {
   const { email, password } = req.body;
@@ -10,8 +10,15 @@ authRouter.post("/checkCredentials", (req, res) => {
     else {
       User.verifyPassword(password, user.hashedPassword).then(
         (passwordIsCorrect) => {
-          if (passwordIsCorrect) res.send("Your credentials are valid !");
-          else res.status(401).send("Invalid credentials");
+          if (passwordIsCorrect) {
+            const token = calculateToken(email);
+
+            User.update(user.id, { token: token });
+
+            res.cookie("user_token", token);
+
+            res.send();
+          } else res.status(401).send("Invalid credentials");
         }
       );
     }
