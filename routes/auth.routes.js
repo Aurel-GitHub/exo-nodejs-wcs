@@ -1,7 +1,5 @@
 const authRouter = require("express").Router();
-
 const User = require("../models/user");
-
 const { calculateToken } = require("../helpers/users");
 
 authRouter.post("/checkCredentials", (req, res) => {
